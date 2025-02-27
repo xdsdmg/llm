@@ -7,45 +7,97 @@ def pair2bytes(pair: Tuple) -> bytes:
     return pair[0] + pair[1]
 
 
+class Node:
+    def __init__(self, v: int) -> None:
+        self.v = v
+        self.children = {}
+
+
+class Trie:
+    def __init__(self) -> None:
+        self.root = Node(0)
+
+    def insert(self, token: bytes):
+        node = self.root
+
+        for b in token:
+            if b in node.children:
+                node = node.children[b]
+            else:
+                node.children[b] = Node(b)
+                node = node.children[b]
+
+    def get_token(self, sentence: bytes) -> bytes:
+        l = 0
+        node = self.root
+        for b in sentence:
+            if b not in node.children:
+                break
+            l += 1
+            node = node.children[b]
+
+        return sentence[:l]
+
+
 class Tokenizer:
     def __init__(self) -> None:
         self.__vocab = [bytes([b]) for b in range(256)]
+        self.__trie = Trie()
+        self.__stats = {}
+        self.__splits = {}
+
+    def vocab(self) -> List[bytes]:
+        return self.__vocab
+
+    def splits(self) -> Dict:
+        return self.__splits
 
     def train(self, sentences: List[str], vocab_len: int):
-        stats = self.__get_stats(sentences)
-        splits = self.__get_splits(stats)
+        self.__init_stats(sentences)
+        self.__init_splits()
 
         while len(self.__vocab) < vocab_len:
-            pair_freqs = self.__get_pair_freqs(stats, splits)
+            pair_freqs = self.__get_pair_freqs()
             best_pair = self.__get_best_pair(pair_freqs)
             if pair_freqs[best_pair] == 1:
                 break
-            splits = self.__merge_pair(best_pair, splits)
+            self.__merge_pair(best_pair)
             self.__vocab.append(pair2bytes(best_pair))
 
-    def vocab(self) -> List:
-        return self.__vocab
+        for v in self.__vocab:
+            self.__trie.insert(v)
 
-    def __get_stats(self, sentences: List[str]) -> Dict:
-        stats = {}
+    def get_tokens(self, sentence: str) -> List[bytes]:
+        tokens = []
+        seq = sentence.encode("utf-8")
 
+        while True:
+            token = self.__trie.get_token(seq)
+            tokens.append(token)
+            l = len(token)
+            if l >= len(seq):
+                break
+            seq = seq[l:]
+
+        return tokens
+
+    def __init_stats(self, sentences: List[str]):
         for sentence in sentences:
             symbols = sentence.split()
             for symbol in symbols:
                 k = symbol.encode("utf-8")
-                stats[k] = (stats[k] + 1) if k in stats else 1
+                self.__stats[k] = (self.__stats[k] + 1) if k in self.__stats else 1
 
-        return stats
+    def __init_splits(self):
+        self.__splits = {
+            word: [bytes([b]) for b in word] for word in self.__stats.keys()
+        }
 
-    def __get_splits(self, stats: Dict) -> Dict:
-        splits = {word: [bytes([b]) for b in word] for word in stats.keys()}
-        return splits
-
-    def __get_pair_freqs(self, stats: Dict, splits: Dict) -> Dict:
+    def __get_pair_freqs(self) -> Dict:
         pair_freqs = {}
 
-        for word, freq in stats.items():
-            split = splits[word]
+        for word, freq in self.__stats.items():
+            split = self.__splits[word]
             l = len(split)
 
             if l == 1:
@@ -70,8 +122,8 @@ class Tokenizer:
 
         return best_pair
 
-    def __merge_pair(self, pair: Tuple, splits: Dict):
-        for word, split in splits.items():
+    def __merge_pair(self, pair: Tuple):
+        for word, split in self.__splits.items():
             if len(split) == 1:
                 continue
 
@@ -81,9 +133,7 @@ class Tokenizer:
                     split = split[:i] + [pair2bytes(pair)] + split[i + 2 :]
                 else:
                     i += 1
-            splits[word] = split
-
-        return splits
+            self.__splits[word] = split
 
 
 if __name__ == "__main__":
@@ -106,3 +156,13 @@ if __name__ == "__main__":
     tokenizer = Tokenizer()
     tokenizer.train(sentences, 300)
     print(tokenizer.vocab())
+
+    print("")
+
+    for k, v in tokenizer.splits().items():
+        print(f"{k}, {v}")
+
+    print("")
+
+    for token in tokenizer.get_tokens("I like to eat apples"):
+        print(token)
