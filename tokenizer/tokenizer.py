@@ -2,6 +2,8 @@
 
 from typing import Dict, List, Tuple
 
+VOCAB_MIN_SIZE = 256
+
 
 def pair2bytes(pair: Tuple) -> bytes:
     return pair[0] + pair[1]
@@ -43,6 +45,7 @@ class Tokenizer:
     def __init__(self) -> None:
         self.__vocab = [bytes([b]) for b in range(256)]
         self.__trie = Trie()
+        # Frequency statistics of each word in the sentences
         self.__stats = {}
         self.__splits = {}
 
@@ -52,7 +55,15 @@ class Tokenizer:
     def splits(self) -> Dict:
         return self.__splits
 
+    def stats(self) -> Dict:
+        return self.__stats
+
     def train(self, sentences: List[str], vocab_len: int):
+        if vocab_len < VOCAB_MIN_SIZE:
+            raise Exception(
+                f"the length of vocab (current value is {vocab_len}) must be larger than {VOCAB_MIN_SIZE}."
+            )
+
         self.__init_stats(sentences)
         self.__init_splits()
 
@@ -67,7 +78,7 @@ class Tokenizer:
         for v in self.__vocab:
             self.__trie.insert(v)
 
-    def get_tokens(self, sentence: str) -> List[bytes]:
+    def tokenize(self, sentence: str) -> List[bytes]:
         tokens = []
         seq = sentence.encode("utf-8")
 
@@ -164,5 +175,5 @@ if __name__ == "__main__":
 
     print("")
 
-    for token in tokenizer.get_tokens("I like to eat apples"):
+    for token in tokenizer.tokenize("I like to eat apples"):
         print(token)
