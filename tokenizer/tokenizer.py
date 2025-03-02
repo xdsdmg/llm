@@ -42,10 +42,18 @@ class Trie:
 
 
 class Tokenizer:
+    """ Tokenizer
+
+    A tokenizer implementation based on Byte-level BPE (BBPE).
+
+    Attributes:
+        __stats: frequency statistics of each word in the sentences.
+        __splits: each byte of the word in `__stats`
+    """
+
     def __init__(self) -> None:
         self.__vocab = [bytes([b]) for b in range(256)]
         self.__trie = Trie()
-        # Frequency statistics of each word in the sentences
         self.__stats = {}
         self.__splits = {}
 
@@ -70,8 +78,10 @@ class Tokenizer:
         while len(self.__vocab) < vocab_len:
             pair_freqs = self.__get_pair_freqs()
             best_pair = self.__get_best_pair(pair_freqs)
-            if pair_freqs[best_pair] == 1:
-                break
+
+            # if pair_freqs[best_pair] == 1:
+            #     break
+
             self.__merge_pair(best_pair)
             self.__vocab.append(pair2bytes(best_pair))
 
@@ -141,7 +151,7 @@ class Tokenizer:
             i = 0
             while i < len(split) - 1:
                 if (split[i], split[i + 1]) == pair:
-                    split = split[:i] + [pair2bytes(pair)] + split[i + 2 :]
+                    split = split[:i] + [pair2bytes(pair)] + split[i + 2:]
                 else:
                     i += 1
             self.__splits[word] = split
