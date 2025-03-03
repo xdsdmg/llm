@@ -1,5 +1,5 @@
 # Reference: https://zhuanlan.zhihu.com/p/652520262
-
+from traceback import print_exc
 from typing import Dict, List, Tuple
 
 VOCAB_MIN_SIZE = 256
@@ -77,10 +77,12 @@ class Tokenizer:
 
         while len(self.__vocab) < vocab_len:
             pair_freqs = self.__get_pair_freqs()
-            best_pair = self.__get_best_pair(pair_freqs)
 
-            # if pair_freqs[best_pair] == 1:
-            #     break
+            if len(pair_freqs) == 0:
+                print(f"Can not find the best pair when the length of the current vocab is {len(self.__vocab)}")
+                break
+
+            best_pair = self.__get_best_pair(pair_freqs)
 
             self.__merge_pair(best_pair)
             self.__vocab.append(pair2bytes(best_pair))

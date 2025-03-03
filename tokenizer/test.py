@@ -9,7 +9,8 @@ class TestTokenizer(unittest.TestCase):
         sentences = [
             "在 Python 中，编写单元测试通常使用 unittest 模块，这是 Python 标准库的一部分。以下是一个简单的步骤指南，帮助你编写单元测试。"
         ]
-        t.train(sentences, 500)
+        vocab_len = 373
+        t.train(sentences, vocab_len)
 
         print("Frequency statistics of each word in the sentences:")
         for k, v in t.stats().items():
