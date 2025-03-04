@@ -1,4 +1,5 @@
 # Reference: https://zhuanlan.zhihu.com/p/652520262
+from shlex import shlex
 from traceback import print_exc
 from typing import Dict, List, Tuple
 
@@ -66,7 +67,15 @@ class Tokenizer:
     def stats(self) -> Dict:
         return self.__stats
 
-    def train(self, sentences: List[str], vocab_len: int):
+    def print_stats(self):
+        for k, v in self.__stats.items():
+            print(f"word: {k.decode("utf-8")}, word in UTF-8: {k}, frequency: {v}")
+
+    def print_splits(self):
+        for k, v in self.__splits.items():
+            print(f"word: {k.decode("utf-8")}, word in UTF-8: {k}, tokens: {v}")
+
+    def train(self, sentences: List[str], vocab_len: int, show_detail: bool = False):
         if vocab_len < VOCAB_MIN_SIZE:
             raise Exception(
                 f"the length of vocab (current value is {vocab_len}) must be larger than {VOCAB_MIN_SIZE}."
@@ -75,7 +84,12 @@ class Tokenizer:
         self.__init_stats(sentences)
         self.__init_splits()
 
+        epoch = 0
         while len(self.__vocab) < vocab_len:
+            if show_detail:
+                print(f"epoch: {epoch}")
+                self.print_splits()
+
             pair_freqs = self.__get_pair_freqs()
 
             if len(pair_freqs) == 0:
@@ -86,6 +100,8 @@ class Tokenizer:
 
             self.__merge_pair(best_pair)
             self.__vocab.append(pair2bytes(best_pair))
+
+            epoch += 1
 
         for v in self.__vocab:
             self.__trie.insert(v)
