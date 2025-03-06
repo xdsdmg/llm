@@ -1,7 +1,7 @@
 # Reference: https://zhuanlan.zhihu.com/p/652520262
-from shlex import shlex
-from traceback import print_exc
-from typing import Dict, List, Tuple
+from multiprocessing.reduction import sendfds
+from typing import Dict, List, Tuple, Literal
+import unicodedata
 
 VOCAB_MIN_SIZE = 256
 
@@ -52,11 +52,12 @@ class Tokenizer:
         __splits: each byte of the word in `__stats`
     """
 
-    def __init__(self) -> None:
+    def __init__(self, normalize_func: Literal["NFKC", "NFKD", "NFC", "NFD"] = "NFKC") -> None:
         self.__vocab = [bytes([b]) for b in range(256)]
         self.__trie = Trie()
         self.__stats = {}
         self.__splits = {}
+        self.normalize_func = normalize_func
 
     def vocab(self) -> List[bytes]:
         return self.__vocab
@@ -76,6 +77,9 @@ class Tokenizer:
             print(f"word: {k.decode("utf-8")}, word in UTF-8: {k}, tokens: {v}")
 
     def train(self, sentences: List[str], vocab_len: int, show_detail: bool = False):
+        for i in range(len(sentences)):
+            sentences[i] = unicodedata.normalize(self.normalize_func, sentences[i])
+
         if vocab_len < VOCAB_MIN_SIZE:
             raise Exception(
                 f"the length of vocab (current value is {vocab_len}) must be larger than {VOCAB_MIN_SIZE}."
