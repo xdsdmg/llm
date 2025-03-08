@@ -2,8 +2,10 @@
 from multiprocessing.reduction import sendfds
 from typing import Dict, List, Tuple, Literal
 import unicodedata
+import os
 
 VOCAB_MIN_SIZE = 256
+CPU_TOTAL = os.cpu_count()
 
 
 def pair2bytes(pair: Tuple) -> bytes:
